@@ -1,4 +1,4 @@
 package com.example.restapi.dto;
 
-public record SubmitJobResponse(long jobId) {
+public record SubmitJobResponse(String jobId) {
 }

@@ -36,15 +36,15 @@ class JobControllerWebTest {
 
 	@Test
 	void submitJobReturnsAcceptedWithJobId() throws Exception {
-		when(jobService.submit(any())).thenReturn(new SubmitJobResponse(55L));
+		when(jobService.submit(any())).thenReturn(new SubmitJobResponse("order-55"));
 
 		mockMvc.perform(post("/api/jobs")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"jobId":55,"payload":"unit-test"}
+						{"jobId":"order-55","payload":"unit-test"}
 						"""))
 				.andExpect(status().isAccepted())
-				.andExpect(jsonPath("$.jobId").value(55));
+				.andExpect(jsonPath("$.jobId").value("order-55"));
 
 		verify(jobService).submit(any());
 	}
@@ -61,10 +61,21 @@ class JobControllerWebTest {
 	}
 
 	@Test
-	void getJobStatusReturnsPayloadAndStatusOnly() throws Exception {
-		when(jobService.getStatus(77L)).thenReturn(new JobStatusResponse("payload-77", JobStatus.RUNNING));
+	void submitJobWithInvalidJobIdFormatReturnsBadRequest() throws Exception {
+		mockMvc.perform(post("/api/jobs")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"jobId":"bad id!","payload":"invalid"}
+						"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.validationErrors.jobId").exists());
+	}
 
-		mockMvc.perform(get("/api/jobs/77/status"))
+	@Test
+	void getJobStatusReturnsPayloadAndStatusOnly() throws Exception {
+		when(jobService.getStatus("batch-77")).thenReturn(new JobStatusResponse("payload-77", JobStatus.RUNNING));
+
+		mockMvc.perform(get("/api/jobs/batch-77/status"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.payload").value("payload-77"))
 				.andExpect(jsonPath("$.status").value("RUNNING"))
@@ -73,11 +84,12 @@ class JobControllerWebTest {
 
 	@Test
 	void getJobStatusForUnknownJobReturnsNotFound() throws Exception {
-		when(jobService.getStatus(88L)).thenThrow(new ResourceNotFoundException("Job not found with id: 88"));
+		when(jobService.getStatus("missing-88"))
+				.thenThrow(new ResourceNotFoundException("Job not found with id: missing-88"));
 
-		mockMvc.perform(get("/api/jobs/88/status"))
+		mockMvc.perform(get("/api/jobs/missing-88/status"))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.message").value("Job not found with id: 88"));
+				.andExpect(jsonPath("$.message").value("Job not found with id: missing-88"));
 	}
 
 }

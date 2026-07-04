@@ -34,7 +34,7 @@ class JobServiceConcurrencyTest {
 	@Test
 	void concurrentSubmitWithSameJobIdOnlyAcceptsOne() throws Exception {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(1L);
+		request.setJobId("job-1");
 		request.setPayload("payload");
 
 		ExecutorService executor = Executors.newFixedThreadPool(8);
@@ -69,13 +69,13 @@ class JobServiceConcurrencyTest {
 
 		assertEquals(1, successCount.get());
 		assertEquals(19, duplicateCount.get());
-		assertEquals(JobStatus.QUEUED, jobService.getStatus(1L).status());
+		assertEquals(JobStatus.QUEUED, jobService.getStatus("job-1").status());
 	}
 
 	@Test
 	void concurrentStatusReadsDuringWorkerTransitionsSeeValidStates() throws Exception {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(42L);
+		request.setJobId("job-42");
 		request.setPayload("concurrent-read");
 		jobService.submit(request);
 
@@ -86,15 +86,15 @@ class JobServiceConcurrencyTest {
 		for (int i = 0; i < 8; i++) {
 			readers.submit(() -> {
 				while (stopReading.getCount() > 0) {
-					observedStatuses.add(jobService.getStatus(42L).status());
+					observedStatuses.add(jobService.getStatus("job-42").status());
 					Thread.onSpinWait();
 				}
 			});
 		}
 
-		jobService.markRunning(42L);
+		jobService.markRunning("job-42");
 		Thread.sleep(10);
-		jobService.markCompleted(42L);
+		jobService.markCompleted("job-42");
 
 		stopReading.countDown();
 		readers.shutdown();
@@ -103,32 +103,32 @@ class JobServiceConcurrencyTest {
 		assertTrue(observedStatuses.contains(JobStatus.QUEUED));
 		assertTrue(observedStatuses.contains(JobStatus.RUNNING));
 		assertTrue(observedStatuses.contains(JobStatus.COMPLETED));
-		assertEquals(JobStatus.COMPLETED, jobService.getStatus(42L).status());
+		assertEquals(JobStatus.COMPLETED, jobService.getStatus("job-42").status());
 	}
 
 	@Test
 	void invalidTransitionIsRejected() {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(7L);
+		request.setJobId("job-7");
 		jobService.submit(request);
 
-		assertThrows(IllegalStateException.class, () -> jobService.markCompleted(7L));
-		assertEquals(JobStatus.QUEUED, jobService.getStatus(7L).status());
+		assertThrows(IllegalStateException.class, () -> jobService.markCompleted("job-7"));
+		assertEquals(JobStatus.QUEUED, jobService.getStatus("job-7").status());
 	}
 
 	@Test
 	void scheduleRetryReturnsJobToQueuedState() {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(8L);
+		request.setJobId("job-8");
 		request.setPayload("retry-me");
 		jobService.submit(request);
 
-		jobService.markRunning(8L);
-		assertEquals(JobStatus.RUNNING, jobService.getStatus(8L).status());
-		assertTrue(jobService.canRetry(8L));
+		jobService.markRunning("job-8");
+		assertEquals(JobStatus.RUNNING, jobService.getStatus("job-8").status());
+		assertTrue(jobService.canRetry("job-8"));
 
-		jobService.scheduleRetry(8L);
-		assertEquals(JobStatus.QUEUED, jobService.getStatus(8L).status());
+		jobService.scheduleRetry("job-8");
+		assertEquals(JobStatus.QUEUED, jobService.getStatus("job-8").status());
 	}
 
 }

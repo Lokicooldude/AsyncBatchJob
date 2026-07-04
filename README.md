@@ -54,24 +54,24 @@ Response:
 ```bash
 curl -X POST http://localhost:8080/api/jobs \
   -H "Content-Type: application/json" \
-  -d '{"jobId": 42, "payload": "my-task"}'
+  -d '{"jobId": "order-2024-001", "payload": "my-task"}'
 ```
 
 Response (`202 Accepted`):
 
 ```json
-{ "jobId": 42 }
+{ "jobId": "order-2024-001" }
 ```
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `jobId` | Yes | Positive integer, client-provided unique job identifier |
+| `jobId` | Yes | Client-provided unique string (max 64 chars; letters, numbers, `_`, `-` only) |
 | `payload` | No | Optional task data (max 1000 characters) |
 
 ### Get job status
 
 ```bash
-curl http://localhost:8080/api/jobs/42/status
+curl http://localhost:8080/api/jobs/order-2024-001/status
 ```
 
 Response:
@@ -91,7 +91,7 @@ To simulate transient failures and retries, prefix the payload with `transient:`
 ```bash
 curl -X POST http://localhost:8080/api/jobs \
   -H "Content-Type: application/json" \
-  -d '{"jobId": 100, "payload": "transient:flaky-task"}'
+  -d '{"jobId": "batch_100", "payload": "transient:flaky-task"}'
 ```
 
 The worker fails the first N attempts (configurable), re-queues the job, and eventually completes or marks it `FAILED` when retries are exhausted.
@@ -234,7 +234,7 @@ stateDiagram-v2
 
 1. **In-memory only** — jobs are stored in memory. All state is lost when the application restarts.
 2. **Single instance** — not designed for horizontal scaling across multiple app instances without an external queue and shared storage.
-3. **Client-provided job IDs** — duplicate `jobId` submissions are rejected, but IDs are not persisted across restarts.
+3. **Client-provided job IDs** — duplicate `jobId` submissions are rejected; IDs are strings and not persisted across restarts.
 4. **Simulated failures only** — transient errors are simulated via the `transient:` payload prefix, not real external failure modes.
 5. **Artificial delays** — `queued-delay-ms` and `running-delay-ms` are for demonstration and easier status polling; remove or reduce them in production.
 6. **No authentication** — the API is open with no auth or rate limiting.

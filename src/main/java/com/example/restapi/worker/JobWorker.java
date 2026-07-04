@@ -75,7 +75,7 @@ public class JobWorker implements ApplicationRunner {
 	private void processJobs() {
 		while (running) {
 			try {
-				long jobId = jobService.takeNextJobId();
+				String jobId = jobService.takeNextJobId();
 				processJob(jobId);
 			}
 			catch (InterruptedException ex) {
@@ -85,7 +85,7 @@ public class JobWorker implements ApplicationRunner {
 		}
 	}
 
-	private void processJob(long jobId) throws InterruptedException {
+	private void processJob(String jobId) throws InterruptedException {
 		sleep(queuedDelayMs);
 
 		jobService.markRunning(jobId);
@@ -115,7 +115,7 @@ public class JobWorker implements ApplicationRunner {
 				Thread.currentThread().getName());
 	}
 
-	private void handleTransientFailure(long jobId, TransientJobException ex) {
+	private void handleTransientFailure(String jobId, TransientJobException ex) {
 		if (jobService.canRetry(jobId)) {
 			log.warn(
 					"Transient failure for job id={} on {}, scheduling retry: {}",

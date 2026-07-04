@@ -25,20 +25,20 @@ class JobServiceTest {
 	@Test
 	void submitCreatesQueuedJobAndReturnsJobId() {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(10L);
+		request.setJobId("job-10");
 		request.setPayload("hello");
 
 		var response = jobService.submit(request);
 
-		assertEquals(10L, response.jobId());
-		assertEquals("hello", jobService.getStatus(10L).payload());
-		assertEquals(JobStatus.QUEUED, jobService.getStatus(10L).status());
+		assertEquals("job-10", response.jobId());
+		assertEquals("hello", jobService.getStatus("job-10").payload());
+		assertEquals(JobStatus.QUEUED, jobService.getStatus("job-10").status());
 	}
 
 	@Test
 	void submitDuplicateJobIdThrows() {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(11L);
+		request.setJobId("job-11");
 		jobService.submit(request);
 
 		assertThrows(IllegalArgumentException.class, () -> jobService.submit(request));
@@ -46,69 +46,69 @@ class JobServiceTest {
 
 	@Test
 	void getStatusForUnknownJobThrowsNotFound() {
-		assertThrows(ResourceNotFoundException.class, () -> jobService.getStatus(404L));
+		assertThrows(ResourceNotFoundException.class, () -> jobService.getStatus("missing-job"));
 	}
 
 	@Test
 	void markRunningCompletedUpdatesStatus() {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(12L);
+		request.setJobId("job-12");
 		jobService.submit(request);
 
-		jobService.markRunning(12L);
-		assertEquals(JobStatus.RUNNING, jobService.getStatus(12L).status());
+		jobService.markRunning("job-12");
+		assertEquals(JobStatus.RUNNING, jobService.getStatus("job-12").status());
 
-		jobService.markCompleted(12L);
-		assertEquals(JobStatus.COMPLETED, jobService.getStatus(12L).status());
+		jobService.markCompleted("job-12");
+		assertEquals(JobStatus.COMPLETED, jobService.getStatus("job-12").status());
 	}
 
 	@Test
 	void markFailedUpdatesStatusAndMessage() {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(13L);
+		request.setJobId("job-13");
 		jobService.submit(request);
-		jobService.markRunning(13L);
+		jobService.markRunning("job-13");
 
-		jobService.markFailed(13L, "processing error");
+		jobService.markFailed("job-13", "processing error");
 
-		assertEquals(JobStatus.FAILED, jobService.getStatus(13L).status());
-		assertEquals("processing error", jobService.requireJob(13L).getErrorMessage());
+		assertEquals(JobStatus.FAILED, jobService.getStatus("job-13").status());
+		assertEquals("processing error", jobService.requireJob("job-13").getErrorMessage());
 	}
 
 	@Test
 	void canRetryRespectsMaxRetries() {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(14L);
+		request.setJobId("job-14");
 		jobService.submit(request);
 
-		jobService.markRunning(14L);
-		assertTrue(jobService.canRetry(14L));
+		jobService.markRunning("job-14");
+		assertTrue(jobService.canRetry("job-14"));
 
-		jobService.scheduleRetry(14L);
-		jobService.markRunning(14L);
-		assertTrue(jobService.canRetry(14L));
+		jobService.scheduleRetry("job-14");
+		jobService.markRunning("job-14");
+		assertTrue(jobService.canRetry("job-14"));
 
-		jobService.scheduleRetry(14L);
-		jobService.markRunning(14L);
-		assertTrue(jobService.canRetry(14L));
+		jobService.scheduleRetry("job-14");
+		jobService.markRunning("job-14");
+		assertTrue(jobService.canRetry("job-14"));
 
-		jobService.scheduleRetry(14L);
-		jobService.markRunning(14L);
-		assertFalse(jobService.canRetry(14L));
+		jobService.scheduleRetry("job-14");
+		jobService.markRunning("job-14");
+		assertFalse(jobService.canRetry("job-14"));
 	}
 
 	@Test
 	void scheduleRetryRequeuesJobId() throws Exception {
 		SubmitJobRequest request = new SubmitJobRequest();
-		request.setJobId(15L);
+		request.setJobId("job-15");
 		jobService.submit(request);
 		jobService.takeNextJobId();
 
-		jobService.markRunning(15L);
-		jobService.scheduleRetry(15L);
+		jobService.markRunning("job-15");
+		jobService.scheduleRetry("job-15");
 
-		assertEquals(JobStatus.QUEUED, jobService.getStatus(15L).status());
-		assertEquals(15L, jobService.takeNextJobId());
+		assertEquals(JobStatus.QUEUED, jobService.getStatus("job-15").status());
+		assertEquals("job-15", jobService.takeNextJobId());
 	}
 
 }

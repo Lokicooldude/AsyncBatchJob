@@ -22,7 +22,7 @@ class TransientFailureSimulatorTest {
 
 	@Test
 	void normalPayloadNeverThrowsTransientError() {
-		Job job = new Job(1L, "regular-work");
+		Job job = new Job("job-1", "regular-work");
 		job.beginProcessing();
 
 		assertDoesNotThrow(() -> TransientFailureSimulator.maybeThrowTransientFailure(job, 2));
@@ -30,7 +30,7 @@ class TransientFailureSimulatorTest {
 
 	@Test
 	void transientPayloadFailsUntilAttemptsExceedConfiguredFailures() {
-		Job job = new Job(2L, "transient:retry-me");
+		Job job = new Job("job-2", "transient:retry-me");
 
 		job.beginProcessing();
 		assertThrows(

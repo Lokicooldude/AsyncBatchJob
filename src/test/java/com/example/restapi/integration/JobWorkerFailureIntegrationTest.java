@@ -33,14 +33,14 @@ class JobWorkerFailureIntegrationTest {
 		mockMvc.perform(post("/api/jobs")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"jobId":601,"payload":"transient:will-fail"}
+						{"jobId":"job-601","payload":"transient:will-fail"}
 						"""))
 				.andExpect(status().isAccepted());
 
-		assertEquals("FAILED", pollStatus(601));
+		assertEquals("FAILED", pollStatus("job-601"));
 	}
 
-	private String pollStatus(long jobId) throws Exception {
+	private String pollStatus(String jobId) throws Exception {
 		for (int attempt = 0; attempt < 100; attempt++) {
 			MvcResult result = mockMvc.perform(get("/api/jobs/" + jobId + "/status"))
 					.andExpect(status().isOk())

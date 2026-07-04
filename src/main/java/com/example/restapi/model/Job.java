@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public class Job {
 
-	private final long id;
+	private final String id;
 	private final String payload;
 	private JobStatus status;
 	private String errorMessage;
@@ -12,7 +12,7 @@ public class Job {
 	private final Instant createdAt;
 	private Instant updatedAt;
 
-	public Job(long id, String payload) {
+	public Job(String id, String payload) {
 		this.id = id;
 		this.payload = payload;
 		this.status = JobStatus.QUEUED;
@@ -20,7 +20,7 @@ public class Job {
 		this.updatedAt = this.createdAt;
 	}
 
-	public long getId() {
+	public String getId() {
 		return id;
 	}
 

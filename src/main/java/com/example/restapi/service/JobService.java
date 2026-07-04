@@ -17,8 +17,8 @@ import com.example.restapi.model.JobStatus;
 @Service
 public class JobService {
 
-	private final ConcurrentHashMap<Long, Job> jobs = new ConcurrentHashMap<>();
-	private final BlockingQueue<Long> queue = new LinkedBlockingQueue<>();
+	private final ConcurrentHashMap<String, Job> jobs = new ConcurrentHashMap<>();
+	private final BlockingQueue<String> queue = new LinkedBlockingQueue<>();
 	private final int maxRetries;
 
 	public JobService(@Value("${job.processing.max-retries:3}") int maxRetries) {
@@ -26,7 +26,7 @@ public class JobService {
 	}
 
 	public SubmitJobResponse submit(SubmitJobRequest request) {
-		long jobId = request.getJobId();
+		String jobId = request.getJobId();
 		Job job = new Job(jobId, request.getPayload());
 		Job existing = jobs.putIfAbsent(jobId, job);
 		if (existing != null) {
@@ -36,16 +36,16 @@ public class JobService {
 		return new SubmitJobResponse(jobId);
 	}
 
-	public JobStatusResponse getStatus(long jobId) {
+	public JobStatusResponse getStatus(String jobId) {
 		Job job = requireJob(jobId);
 		return new JobStatusResponse(job.getPayload(), job.getStatus());
 	}
 
-	public Long takeNextJobId() throws InterruptedException {
+	public String takeNextJobId() throws InterruptedException {
 		return queue.take();
 	}
 
-	public Job requireJob(long jobId) {
+	public Job requireJob(String jobId) {
 		Job job = jobs.get(jobId);
 		if (job == null) {
 			throw new ResourceNotFoundException("Job not found with id: " + jobId);
@@ -53,23 +53,23 @@ public class JobService {
 		return job;
 	}
 
-	public void markRunning(long jobId) {
+	public void markRunning(String jobId) {
 		requireJob(jobId).beginProcessing();
 	}
 
-	public void markCompleted(long jobId) {
+	public void markCompleted(String jobId) {
 		requireJob(jobId).transitionToCompleted();
 	}
 
-	public void markFailed(long jobId, String errorMessage) {
+	public void markFailed(String jobId, String errorMessage) {
 		requireJob(jobId).transitionToFailed(errorMessage);
 	}
 
-	public boolean canRetry(long jobId) {
+	public boolean canRetry(String jobId) {
 		return requireJob(jobId).getAttemptCount() <= maxRetries;
 	}
 
-	public void scheduleRetry(long jobId) {
+	public void scheduleRetry(String jobId) {
 		Job job = requireJob(jobId);
 		job.requeueForRetry();
 		queue.offer(jobId);

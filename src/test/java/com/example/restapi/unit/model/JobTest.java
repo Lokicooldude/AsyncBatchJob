@@ -13,9 +13,9 @@ class JobTest {
 
 	@Test
 	void newJobStartsQueuedWithZeroAttempts() {
-		Job job = new Job(1L, "payload");
+		Job job = new Job("job-1", "payload");
 
-		assertEquals(1L, job.getId());
+		assertEquals("job-1", job.getId());
 		assertEquals("payload", job.getPayload());
 		assertEquals(JobStatus.QUEUED, job.getStatus());
 		assertEquals(0, job.getAttemptCount());
@@ -24,7 +24,7 @@ class JobTest {
 
 	@Test
 	void beginProcessingMovesQueuedToRunningAndIncrementsAttempt() {
-		Job job = new Job(1L, "payload");
+		Job job = new Job("job-1", "payload");
 
 		job.beginProcessing();
 
@@ -34,7 +34,7 @@ class JobTest {
 
 	@Test
 	void transitionToCompletedMovesRunningToCompleted() {
-		Job job = new Job(1L, "payload");
+		Job job = new Job("job-1", "payload");
 		job.beginProcessing();
 
 		job.transitionToCompleted();
@@ -44,7 +44,7 @@ class JobTest {
 
 	@Test
 	void requeueForRetryMovesRunningBackToQueued() {
-		Job job = new Job(2L, "payload");
+		Job job = new Job("job-2", "payload");
 		job.beginProcessing();
 
 		job.requeueForRetry();
@@ -55,14 +55,14 @@ class JobTest {
 
 	@Test
 	void requeueForRetryRejectsNonRunningJob() {
-		Job job = new Job(3L, "payload");
+		Job job = new Job("job-3", "payload");
 
 		assertThrows(IllegalStateException.class, job::requeueForRetry);
 	}
 
 	@Test
 	void transitionToFailedFromRunning() {
-		Job job = new Job(1L, "payload");
+		Job job = new Job("job-1", "payload");
 		job.beginProcessing();
 
 		job.transitionToFailed("boom");
@@ -73,7 +73,7 @@ class JobTest {
 
 	@Test
 	void invalidTransitionsAreRejected() {
-		Job job = new Job(1L, "payload");
+		Job job = new Job("job-1", "payload");
 
 		assertThrows(IllegalStateException.class, job::transitionToCompleted);
 		assertThrows(IllegalStateException.class, job::requeueForRetry);

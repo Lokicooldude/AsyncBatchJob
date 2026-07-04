@@ -25,12 +25,12 @@ class JobWorkerIntegrationTest {
 		mockMvc.perform(post("/api/jobs")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"jobId":701,"payload":"regular-work"}
+						{"jobId":"job-701","payload":"regular-work"}
 						"""))
 				.andExpect(status().isAccepted());
 
 		for (int attempt = 0; attempt < 20; attempt++) {
-			MvcResult result = mockMvc.perform(get("/api/jobs/701/status"))
+			MvcResult result = mockMvc.perform(get("/api/jobs/job-701/status"))
 					.andExpect(status().isOk())
 					.andReturn();
 			if (result.getResponse().getContentAsString().contains("COMPLETED")) {
@@ -46,34 +46,34 @@ class JobWorkerIntegrationTest {
 		mockMvc.perform(post("/api/jobs")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"jobId":702,"payload":"transient:retry-me"}
+						{"jobId":"job-702","payload":"transient:retry-me"}
 						"""))
 				.andExpect(status().isAccepted());
 
-		org.junit.jupiter.api.Assertions.assertEquals("COMPLETED", pollStatus(702));
+		org.junit.jupiter.api.Assertions.assertEquals("COMPLETED", pollStatus("job-702"));
 	}
 
 	@Test
 	void workerPoolProcessesMultipleJobsInParallel() throws Exception {
-		submitJob(501, "job-a");
-		submitJob(502, "job-b");
-		submitJob(503, "job-c");
+		submitJob("batch-501", "job-a");
+		submitJob("batch-502", "job-b");
+		submitJob("batch-503", "job-c");
 
-		assertEquals("COMPLETED", pollStatus(501));
-		assertEquals("COMPLETED", pollStatus(502));
-		assertEquals("COMPLETED", pollStatus(503));
+		assertEquals("COMPLETED", pollStatus("batch-501"));
+		assertEquals("COMPLETED", pollStatus("batch-502"));
+		assertEquals("COMPLETED", pollStatus("batch-503"));
 	}
 
-	private void submitJob(long jobId, String payload) throws Exception {
+	private void submitJob(String jobId, String payload) throws Exception {
 		mockMvc.perform(post("/api/jobs")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"jobId":%d,"payload":"%s"}
+						{"jobId":"%s","payload":"%s"}
 						""".formatted(jobId, payload)))
 				.andExpect(status().isAccepted());
 	}
 
-	private String pollStatus(long jobId) throws Exception {
+	private String pollStatus(String jobId) throws Exception {
 		for (int attempt = 0; attempt < 100; attempt++) {
 			MvcResult result = mockMvc.perform(get("/api/jobs/" + jobId + "/status"))
 					.andExpect(status().isOk())

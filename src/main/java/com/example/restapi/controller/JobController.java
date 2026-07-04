@@ -32,7 +32,7 @@ public class JobController {
 	}
 
 	@GetMapping("/{jobId}/status")
-	public JobStatusResponse getJobStatus(@PathVariable long jobId) {
+	public JobStatusResponse getJobStatus(@PathVariable String jobId) {
 		return jobService.getStatus(jobId);
 	}
 
